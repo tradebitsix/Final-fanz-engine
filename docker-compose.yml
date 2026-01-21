@@ -1,0 +1,39 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: fans
+      POSTGRES_PASSWORD: fans
+      POSTGRES_DB: fans_of_the_one
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg2://fans:fans@db:5432/fans_of_the_one
+      AUTO_CREATE_TABLES: "1"  # local only; in production run alembic
+      # FANS_OF_THE_ONE_API_KEY: "change-me"
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+
+  web:
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
